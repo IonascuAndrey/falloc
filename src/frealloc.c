@@ -5,7 +5,6 @@
 #include <stdio.h>
 
 void *frealloc(void *ptr, size_t size) {
-    printf("Merge REALLOC\n");
     if (!ptr) {
         // Equivalent to malloc if ptr is NULL
         return fmalloc(size);

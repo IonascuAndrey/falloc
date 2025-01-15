@@ -152,21 +152,6 @@ void *fmalloc(size_t size) {
     }
     
     descriptor_ptr b = head;
-    printf("---------------------------");
-    while(b) {
-        
-        printf("Block Descriptor %p:\n", b);
-        printf("  free: %ld\n", b->free);
-        printf("  size: %zu\n", b->size);
-        printf("  next: %p\n", (void *)b->next);
-        printf("  prev: %p\n", (void *)b->prev);
-        printf("  ptr: %p\n", b->ptr);
-        printf("  block: %p\n", b->block);
-        b=b->next;
-        
-    }
-    printf("---------------------------");
-    printf("Merge Malloc\n");
     pthread_mutex_unlock(&lock);
     return block->block;
 }

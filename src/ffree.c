@@ -67,8 +67,10 @@ void cascade_unmap(descriptor_ptr tail) {
             printf("No previous block to unmap.\n");
             head=NULL; // To remove the dangling pointer
         }
-    } else {
+    } 
+    else {
         printf("Block at %p is not free, stopping cascade.\n", tail);
+        tail -> next = NULL;
     }
 }
 // This is a no-op in this basic example
@@ -78,25 +80,19 @@ void ffree(void *ptr)
     
     if (is_addr_valid(ptr))
     {
-        printf("Merge FREE\n");
         descriptor_ptr block = get_block_address(ptr);
         block->free = 1;
 
-        printf("NEXT: %p \n", block->next);
         if (block->prev && block->prev->free && block->prev->block+block->prev->size==block) // the previous block exists, it is free, and mergable
         {
-            printf("IF1\n");
             block = merge_blocks(block->prev);
         }
         if (block->next && block->block+block->size==block->next)
         {
-            printf("IF2\n");
             block = merge_blocks(block);
         } 
         if(!block->next){
-            printf("Sunt ultimul block\n");
             // Unmapping all the last free consecutive blocks from the list
-            printf("Block: %p", block);
             cascade_unmap(block);
         }
     }
