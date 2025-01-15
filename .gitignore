@@ -1,0 +1,77 @@
+# Compiled object files
+*.o
+*.obj
+
+# Compiled static libraries
+*.lib
+*.a
+
+# Compiled dynamic libraries
+*.dll
+*.so
+*.dylib
+
+# Executable files
+*.exe
+*.out
+*.app
+
+# Build directories
+/build/
+/bin/
+/dist/
+/Debug/
+/Release/
+
+# Generated dependency files
+*.d
+
+# Editor/IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.user
+*.workspace
+*.project
+
+# Logs and debug files
+*.log
+*.dbg
+*.stackdump
+
+# Temporary files
+*.tmp
+*.temp
+*.~*
+
+# Backup files
+*.bak
+*.old
+*.orig
+*.save
+
+# Generated files
+*.gch
+*.pch
+
+# Tests and coverage files
+/tests/*.o
+/tests/*.out
+/tests/*.log
+*.gcno
+*.gcda
+*.gcov
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Auto-generated documentation
+/doc/html/
+/doc/latex/
+
+/*.DS_Store
+*.directory

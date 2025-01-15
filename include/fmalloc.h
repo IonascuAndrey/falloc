@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-void *fmalloc(size_t size) ;
+void *fmalloc(size_t size);
 
 #endif // FMALLOC_H
 

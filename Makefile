@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Werror -fPIC
+CFLAGS = -Wall -fPIC
 LIBRARY = libfalloc.a   # Static library name
 
 SRC_DIR = src
