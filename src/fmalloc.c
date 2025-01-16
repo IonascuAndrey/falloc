@@ -123,6 +123,7 @@ void *fmalloc(size_t size) {
         block=extend_heap(NULL, s);
         if (!block)
         {
+            pthread_mutex_unlock(&lock);
             return NULL;
         }
         head = block;
@@ -146,6 +147,7 @@ void *fmalloc(size_t size) {
             block = extend_heap(tail, s);
             if (!block)
             {
+                pthread_mutex_unlock(&lock);
                 return NULL;
             }
         }

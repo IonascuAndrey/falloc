@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <semaphore.h>
 #include "falloc.h"
-#define N 1
+#define N 2 //The number of threads synchronized to run at the same time
 
 
 //SINGLE THREADED:
@@ -15,17 +15,17 @@
 //TEST 4 -> CASCADE_UNMAP
 //TEST 5 -> allocating a vector of ints and iterating through it
 
-//MULTI THREADED:
-//TEST 1 -> FMALLOC -> SIMPLE + SPLIT
-//TEST 2 -> FFREE -> SIMPLE + MERGE
-//TEST 3 -> REALLOC
-//TEST 4 -> CASCADE_UNMAP
+//MULTI THREADED: -> allocating memory to demonstrate matrix multiplication using threads
 
 
-//SINGLE THREADED:
-//TEST 1 -> FMALLOC -> SIMPLE + SPLIT
+
+pthread_mutex_t mtx;
+sem_t sem;
+
+int bariera;
 
 void Test1(){
+    printf("TEST 1\n");
     //ALLOCATING
     void *ptr1 = fmalloc(100*sizeof(int));
     void *ptr2 = fmalloc(100*sizeof(int));
@@ -41,6 +41,7 @@ void Test1(){
 }
 
 void Test2(){
+    printf("TEST 2\n");
     //ALLOCATING
     void *ptr1 = fmalloc(100*sizeof(int));
     void *ptr2 = fmalloc(100*sizeof(int));
@@ -65,9 +66,13 @@ void Test2(){
     ffree(ptr5);
     print_memory_list();
     printf("----------------------------------\n\n");
+    ffree(ptr1);
+    ffree(ptr4);
+    ffree(ptr3);
 }
 
 void Test3(){
+    printf("TEST 3\n");
     //ALLOCATING -> A BIGGER SIZE
     int *ptr1 = fmalloc(2*sizeof(int));
     int *ptr2 = fmalloc(10*sizeof(int)); //to prevent emptying the list (YET :)))
@@ -89,10 +94,14 @@ void Test3(){
     ptr1 = frealloc(ptr1, 2 * sizeof(int));
     print_memory_list();
     printf("----------------------------------\n");
+    ffree(ptr1);
+    ffree(ptr2);
+
 }
 
 
 void Test4(){
+    printf("TEST 4\n");
     void *ptr1 = fmalloc(100*sizeof(int));
     void *ptr2 = fmalloc(100*sizeof(int));
     void *ptr3 = fmalloc(100*sizeof(int));
@@ -134,6 +143,7 @@ void Test4(){
 }
 
 void Test5(){
+    printf("TEST 5\n");
     int *ptr1 = fmalloc(100 * sizeof(int));
     int *ptr2 = fmalloc(1 * sizeof(int));
     *ptr2 = 0;
@@ -144,179 +154,232 @@ void Test5(){
     printf("The sum of the 100 allocated elements is: %d.\n", *ptr2);
 }
 
+void init(int num)
+{
+	bariera = num;
+}
+
+void barrier_point()
+{
+	pthread_mutex_lock(&mtx);
+	bariera --;
+	pthread_mutex_unlock(&mtx);
+	if(bariera > 0)
+		if(sem_wait(&sem))
+			perror("IN FCT BAR LA SEM\n");
+	if(bariera == 0)
+	{
+		for(int i = 0; i < N; i++)
+			if(sem_post(&sem))
+				perror("IN FCT BAR LA SEM POST\n"); 
+	}
+}
+
+
+void *Test6(void *v)
+{
+    int* tid=(int*)v;
+    barrier_point();
+    void *ptr1 = fmalloc(5*sizeof(int));
+    printf("Threadul %d: ptr1:%p\n", *tid, ptr1);
+    void *ptr2 = fmalloc(5*sizeof(int));
+    printf("Threadul %d: ptr2:%p\n", *tid, ptr2);
+    print_memory_list();
+    sleep(2);
+    ffree(ptr1);
+    ffree(ptr2);
+
+    return NULL;
+    }
+
+
+void *Test7(void *v) {
+    int* tid=(int*)v;
+    barrier_point();
+    void *ptr1 = fmalloc(10*sizeof(int));
+    void *ptr2 = fmalloc(10*sizeof(int));
+    ffree(ptr2);
+    printf("SPLIT\n");
+    print_memory_list();
+    void *ptr3 = fmalloc(2*sizeof(int));
+    ffree(ptr3);
+    printf("MERGE\n");
+    print_memory_list();
+    sleep(2);
+    ffree(ptr1);
+    ffree(ptr2);
+
+    return NULL;
+}
+
+void Test8(){
+	pid_t pid = fork();
+	if(pid < 0)
+		return errno;
+    else if(pid == 0)
+    {
+        char *argv2[] = {"matrix_multiplication", NULL};
+        execve("/home/ioana/SO/Proiect/SO/matrix_multiplication", argv2, NULL);
+        perror(NULL);
+    }
+    else 
+    {	
+        wait(NULL);
+        printf("Done parent %d Me %d\n", getpid(), pid);
+    }
+}
+
 
 int main(){
-    Test1();
-    Test2();
-    Test3();
-    Test4();
-    Test5();
+    //TESTE SINGLE THREADED
+    //Test1();
+    //Test2();
+    //Test3();
+    //Test4();
+    //Test5();
+    //TESTE MULTI THREADED
+    //Test6();
+    // if(pthread_mutex_init(&mtx, NULL))
+	// {
+	// 	perror(NULL);
+	// 	return errno;
+	// }
+	// if (sem_init(&sem, 0, 0))
+	// {
+	// 	perror(NULL);
+	// 	return errno;
+	// }
+	// init(N);
+	// //5 threaduri
+	// pthread_t thr[N];
+	// for(int i = 0; i < N; i++)
+	// {
+	// 	int *tid = malloc(sizeof(int)); // We use the standard malloc to better show the functionality of fmalloc
+	// 	*tid = i;
+	// 	// if(pthread_create(&thr[i], NULL, Test6, (void *)tid))
+	// 	// if(pthread_create(&thr[i], NULL, Test8, (void *)tid))
+	// 	if(pthread_create(&thr[i], NULL, Test7, (void *)tid))
+	// 	// if(pthread_create(&thr[i], NULL, Test9, (void *)tid))
+	// 	{
+	// 		perror(NULL);
+	// 		return errno;
+	// 	}
+	// }
+    // for(int i = 0; i < N; i++)
+	// 	pthread_join(thr[i], NULL);
+	// sem_destroy(&sem);
+	// pthread_mutex_destroy(&mtx);
+
     return 0;
 }
 
 
+// //MATRIX MULTIPLICATION
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <errno.h>
+// #include <pthread.h>
+// #include "fmalloc.h"
+
+// int n1, n2, n3, m1, m2, m3;
+// int *matrice1, *matrice2, *matrice3;
+
+// typedef struct{
+// 	int linie, coloana;
+// }param;
 
 
-// pthread_mutex_t mtx;
-// sem_t sem;
-
-// int bariera;
-
-// void init(int num)
+// int *calculeaza_elem(void *v)
 // {
-// 	bariera = num;
+// 	int sum = 0;
+// 	int *s = fmalloc(sizeof(int));
+// 	//convert la ce am eu nevoie din ce am primit ca parametrii
+// 	param *p = (param *)v;
+// 	int col = p -> coloana;
+	
+// 	for(int i = p -> linie * m1; i < p -> linie * m1 + m1; i++)
+// 		{
+// 			//printf("%d %d\n", matrice1[i], matrice2[col]);
+// 			sum += matrice1[i] * matrice2[col];
+// 			col = col + m2;
+// 		}
+// 	//printf("%d\n", sum);
+// 	*s = sum;
+// 	ffree(p);
+// 	return s;
 // }
 
-// void barrier_point()
-// {
-// 	pthread_mutex_lock(&mtx);
-// 	bariera --;
-// 	pthread_mutex_unlock(&mtx);
-// 	if(bariera > 0)
-// 		if(sem_wait(&sem))
-// 			perror("IN FCT BAR LA SEM\n");
-// 	if(bariera == 0)
-// 	{
-// 		for(int i = 0; i < N; i++)
-// 			if(sem_post(&sem))
-// 				perror("IN FCT BAR LA SEM POST\n"); 
-//         printf("S-au dus 5");
-// 	}
-// }
-
-
-// void *tfun(void *v)
-// {
-//     int* tid=(int*)v;
-// 	// for(int i=0; i<5; i++) {
-//     //     void *ptr = fmalloc(5*sizeof(int));
-//     //     if (ptr == NULL) {
-//     //         printf("Memory allocation failed for thread: %d\n", *tid);
-//     //     }
-//     //     printf("Allocated memory at %pfor thread: %d\n", ptr, *tid);
-
-//     //     // // Reallocate memory to 256 bytes
-//     //     // ptr = frealloc(ptr, 256);
-//     //     // if (ptr == NULL) {
-//     //     //     printf("Memory reallocation failed\n");
-//     //     // }
-//     //     // printf("Reallocated memory at %p for thread: %d\n", ptr, *tid);
-
-//     //     // Free the allocated memory
-//     //     // if(*tid%2==1) {
-//     //     //     ffree(ptr);
-//     //     //     printf("Freed memory at %p for thread: %d\n", ptr, *tid);
-//     //     // }
-//     // }
-
-//     // TESTE SINGLE THREADING
-//     // void *ptr1 = fmalloc(100*sizeof(int));
-//     // void *ptr2 = fmalloc(100*sizeof(int));
-//     // void *ptr3 = fmalloc(100*sizeof(int));
-//     // void *ptr4 = fmalloc(100*sizeof(int));
-//     // void *ptr5 = fmalloc(100*sizeof(int));
-//     // ffree(ptr3);
-//     // void *ptr6 = fmalloc(5*sizeof(int));
-//     // ffree(ptr6);
-//     // void *ptr7 = fmalloc(200*sizeof(int));
-//     // ffree(ptr4);
-
-//     //------------
-//     void *ptr1 = fmalloc(100*sizeof(int));
-//     void *ptr2 = fmalloc(100*sizeof(int));
-//     void *ptr3 = fmalloc(100*sizeof(int));
-//     void *ptr4 = fmalloc(100*sizeof(int));
-//     //print_memory_list();
-//     ffree(ptr1);
-//     ffree(ptr2);
-//     ffree(ptr3);
-//     ffree(ptr4);
-//     int *ptr5 = fmalloc(1*sizeof(int));
-//     *ptr5=12;
-//     //print_memory_list();
-//     // int* ptr7= frealloc(ptr5, 10*sizeof(int));
-//     // printf("Pointer2:----%d", *ptr7);
-
-//     return NULL;
-// }
 
 // int main()
 // {
-// 	// if(pthread_mutex_init(&mtx, NULL))
-// 	// {
-// 	// 	perror(NULL);
-// 	// 	return errno;
-// 	// }
-// 	// if (sem_init(&sem, 0, 0))
-// 	// {
-// 	// 	perror(NULL);
-// 	// 	return errno;
-// 	// }
-// 	// init(N);
+// 	//CITIRE SI VALIDARE
+// 	printf("Dimensiuni matrice1:\n");
+// 	scanf("%d", &n1);
+// 	scanf("%d", &m1);
+// 	printf("Dimensiuni matrice2:\n");
+// 	scanf("%d", &n2);
+// 	scanf("%d", &m2);
+// 	if(m1 != n2)
+// 	{
+// 		printf("Matricile nu pot fi inmultite");
+// 		return 0;
+// 	}
+// 	n3 = n1;
+// 	m3 = m2;
+// 	matrice1 = fmalloc(n1 * m1 * sizeof(int));
+// 	matrice2 = fmalloc(n2 * m2 * sizeof(int));
+// 	matrice3 = fmalloc(n3 * m3 * sizeof(int));
+// 	for(int i = 0; i < n1 * m1; i++)
+// 		scanf("%d", &matrice1[i]);
+// 	for(int i = 0; i < n2 * m2; i++)
+// 		scanf("%d", &matrice2[i]);
 	
-// 	// //5 threaduri
-// 	// pthread_t thr[N];
-// 	// for(int i = 0; i < N; i++)
-// 	// {
-// 	// 	int *tid = malloc(sizeof(int));
-// 	// 	*tid = i;
-// 	// 	if(pthread_create(&thr[i], NULL, tfun, (void *)tid))
-// 	// 	{
-// 	// 		perror(NULL);
-// 	// 		return errno;
-// 	// 	}
-// 	// }
-	
-// 	// for(int i = 0; i < N; i++)
-// 	// 	pthread_join(thr[i], NULL);
-// 	// sem_destroy(&sem);
-// 	// pthread_mutex_destroy(&mtx);
-// 	// return 0;
-//     void *ptr1 = fmalloc(100*sizeof(int));
-//     void *ptr2 = fmalloc(100*sizeof(int));
-//     void *ptr3 = fmalloc(100*sizeof(int));
-//     int *ptr4 = fmalloc(100*sizeof(int));
-//     int *ptr5 = fmalloc(1*sizeof(int));
-//     void *ptr6 = fmalloc(100*sizeof(int));
-//     void *ptr7 = fmalloc(100*sizeof(int));
-//     void *ptr8 = fmalloc(100*sizeof(int));
-//     void *ptr9 = fmalloc(100*sizeof(int));
-//     void *ptr10 = fmalloc(100*sizeof(int));
-//     ffree(ptr2);
-//     ffree(ptr3);
-//     ffree(ptr5);
-//     ffree(ptr6);
-//     ffree(ptr8);
-//     ffree(ptr9);
-//     ffree(ptr10);
-//     print_memory_list();
-//     ffree(ptr7);
-//     print_memory_list();
-//     ffree(ptr4);
-//     print_memory_list();
-    
-//     // print_memory_list();
-//     // ffree(ptr5);
-//     // print_memory_list();
-//     // ffree(ptr5);
-//     // print_memory_list();
-//     // ffree(ptr5);
-//     // print_memory_list();
-//     // ffree(ptr5);
-//     // print_memory_list();
-//     // ffree(ptr6);
-//     // print_memory_list();
-//     // ffree(ptr7);
-//     // print_memory_list();
-//     // ffree(ptr4);
-//     // print_memory_list();
-//     // int *ptr5 = fmalloc(1*sizeof(int));
-//     // *ptr5=12;
-//     // print_memory_list();
-//     // // int* ptr7= frealloc(ptr5, 10*sizeof(int));
-//     // // printf("Pointer2:----%d", *ptr7);
+// 	//TREBUIE SA FAC MAI MULTE THREADURI (MAI EXACT NR DE ELEM
+// 	//ALE MATRICEI3) PT A CALCULA CONCOMITENT ELEM MATRICEI
+// 	pthread_t thr[n3 * m3];
+// 	int linie = 0, coloana = 0;
+// 	for(int i = 0; i < n3 * m3; i++)
+// 		{
+// 			//trebuie neaparat unul separat pt ca s-ar putea ca var sa nu apuce sa se actualizeze la inceperea unui nou thread
+// 			param *p = fmalloc(sizeof(param));
+// 			p -> linie = linie;
+// 			p -> coloana = coloana;
+// 			if(pthread_create(&thr[i], NULL, calculeaza_elem, p))
+// 			{
+// 				perror(NULL);
+// 				printf("Nu merge\n");
+// 				return errno;
+// 			}
+// 			else
+// 			{
 
-//     return 0;
+// 				if(coloana == m2 - 1)
+// 				{
+// 					linie ++;
+// 					coloana = 0;
+// 				}
+// 				else coloana ++;
+// 			}
+// 		}
+// 	int *rez;
+// 	for(int i = 0; i < n3 * m3; i++)
+// 		{
+// 			if(pthread_join(thr[i], &rez))
+// 			{
+// 				perror(NULL);
+// 				return errno;
+// 			}
+// 			matrice3[i] = *rez;
+// 		}
+// 	ffree(rez);
+// 	for(int i = 0; i < n3 * m3; i++)
+// 	{
+// 		if(i % m3 == 0)
+// 			printf("\n");
+// 		printf("%d ", matrice3[i]);
+// 	}
+// 	ffree(matrice1);
+// 	ffree(matrice2);
+// 	ffree(matrice3);
+// 	return 0;
 // }
-
-

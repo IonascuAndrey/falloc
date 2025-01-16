@@ -14,7 +14,7 @@ void print_memory_list()
         printf("  next: %p\n", (void *)start->next);
         printf("  prev: %p\n", (void *)start->prev);
         printf("  ptr: %p\n", start->ptr);
-        printf("  startlock: %p\n", start->block);
+        printf("  lock: %p\n", start->block);
         start=start->next;
         
     }
