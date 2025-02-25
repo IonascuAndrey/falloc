@@ -5,10 +5,8 @@ Falloc is a lightweight and efficient memory allocation library written in C. It
 ## Features
 
 - Efficient memory allocation with minimal fragmentation
-- Custom memory pools for optimized performance
 - Thread-safe allocation (if implemented)
-- Debugging tools for memory leaks and usage tracking
-- Simple API similar to `malloc`/`free`
+- Simple API similar to `malloc`/`free`/`realloc`
 
 ## Installation
 
@@ -18,7 +16,7 @@ Falloc is a lightweight and efficient memory allocation library written in C. It
 
 ### Build Instructions
 ```sh
-git clone https://github.com/yourusername/falloc.git
+git clone https://github.com/IonascuAndrey/falloc.git
 cd falloc
 make
 ```
@@ -54,22 +52,11 @@ int main() {
 ### `void *fmalloc(size_t size)`
 Allocates `size` bytes of memory and returns a pointer to it.
 
-### `void *fcalloc(size_t num, size_t size)`
-Allocates an array of `num` elements, each of `size` bytes, and initializes them to zero.
-
 ### `void *frealloc(void *ptr, size_t new_size)`
 Reallocates memory, resizing the block pointed to by `ptr` to `new_size` bytes.
 
 ### `void ffree(void *ptr)`
 Frees the allocated memory pointed to by `ptr`.
-
-## Performance Comparison
-
-Benchmarks show that Falloc achieves **X% faster allocations** compared to standard `malloc` in multi-threaded environments.
-
-## Debugging & Logging
-
-Use `FALLOC_DEBUG=1` to enable debug logs and track memory usage.
 
 ## License
 
